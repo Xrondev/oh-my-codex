@@ -143,20 +143,6 @@ function countMatches(text: string, pattern: RegExp): number {
   return text.match(pattern)?.length ?? 0;
 }
 
-async function makeHistoryTreeWritable(path: string): Promise<void> {
-  if (!existsSync(path)) return;
-  const entry = await lstat(path);
-  if (entry.isSymbolicLink()) return;
-  if (entry.isDirectory()) {
-    await chmod(path, 0o700);
-    for (const child of await fsReaddir(path)) {
-      await makeHistoryTreeWritable(join(path, child));
-    }
-  } else {
-    await chmod(path, 0o600);
-  }
-}
-
 function expectedLowComplexityModel(codexHomeOverride?: string): string {
   return getTeamLowComplexityModel(codexHomeOverride);
 }
@@ -3263,7 +3249,15 @@ describe("project launch scope helpers", () => {
     } finally {
       if (existsSync(join(wd, "source-sessions"))) chmodSync(join(wd, "source-sessions"), 0o700);
       if (existsSync(join(wd, "source-sessions", "nested"))) chmodSync(join(wd, "source-sessions", "nested"), 0o700);
-      await makeHistoryTreeWritable(join(wd, ".omx", "runtime", "codex-home", "session-history-read-only"));
+      if (existsSync(join(wd, ".omx", "runtime", "codex-home"))) {
+        chmodSync(join(wd, ".omx", "runtime", "codex-home"), 0o700);
+      }
+      if (existsSync(join(wd, ".omx", "runtime", "codex-home", "session-history-read-only", "sessions"))) {
+        chmodSync(join(wd, ".omx", "runtime", "codex-home", "session-history-read-only", "sessions"), 0o700);
+      }
+      if (existsSync(join(wd, ".omx", "runtime", "codex-home", "session-history-read-only", "sessions", "nested"))) {
+        chmodSync(join(wd, ".omx", "runtime", "codex-home", "session-history-read-only", "sessions", "nested"), 0o700);
+      }
       await rm(wd, { recursive: true, force: true });
     }
   });
@@ -3363,7 +3357,12 @@ describe("project launch scope helpers", () => {
     } finally {
       if (existsSync(join(wd, "source-sessions", "rollout.jsonl"))) chmodSync(join(wd, "source-sessions", "rollout.jsonl"), 0o600);
       if (existsSync(join(wd, "source-sessions"))) chmodSync(join(wd, "source-sessions"), 0o700);
-      await makeHistoryTreeWritable(join(wd, ".omx", "runtime", "codex-home", "session-history-group-only"));
+      if (runtimeCodexHome && existsSync(join(runtimeCodexHome, "sessions"))) {
+        chmodSync(join(runtimeCodexHome, "sessions"), 0o700);
+        if (existsSync(join(runtimeCodexHome, "sessions", "rollout.jsonl"))) {
+          chmodSync(join(runtimeCodexHome, "sessions", "rollout.jsonl"), 0o600);
+        }
+      }
       await rm(wd, { recursive: true, force: true });
     }
   });

@@ -1901,10 +1901,7 @@ async function replaceProjectLaunchRuntimeHistoryDirectory(
       throw new Error(`history staging path is not a directory: ${temporary}`);
     }
     await assertHistoryDestinationParentWithin(destination, destinationRoot);
-    const stagedMode = stagedStat.mode & 0o7777;
-    await chmodHistoryDestination(temporary, stagedMode | 0o700, false);
     await publishHistoryReplacement(temporary, destination, true);
-    await chmodHistoryDestination(destination, stagedMode, false);
   } finally {
     await rm(temporary, { recursive: true, force: true }).catch(() => undefined);
   }
